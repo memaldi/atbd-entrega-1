@@ -10,7 +10,7 @@ from kafka import KafkaProducer
 spark = SparkSession.builder.getOrCreate()
 
 # Change this to point to the folder where all the data remains
-events = spark.read.csv("../2019-Dec.csv", header=True)
+events = spark.read.csv("../input", header=True)
 
 first_event = datetime.strptime(events.select("event_time").sort("event_time").first().event_time, "%Y-%m-%d %H:%M:%S %Z")
 
