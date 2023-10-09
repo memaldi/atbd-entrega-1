@@ -37,14 +37,33 @@
   - name: Extract kafka
     ansible.builtin.command: tar -xf /home/ec2-user/kafka_2.13-3.5.1.tgz
 
+  - name: Copy zookeeper.service to instance
+    become: true
+    ansible.builtin.copy:
+      src: zookeeper.service
+      dest: /etc/systemd/system/zookeeper.service
+
+  - name: Copy kafka.service to instance
+    become: true
+    ansible.builtin.copy:
+      src: kafka.service
+      dest: /etc/systemd/system/kafka.service
+
   - name: Start Zookeeper
-    ansible.builtin.shell: nohup /home/ec2-user/kafka_2.13-3.5.1/bin/zookeeper-server-start.sh /home/ec2-user/kafka_2.13-3.5.1/config/zookeeper.properties > /home/ec2-user/kafka_2.13-3.5.1/zookeeper.out 2>&1 &
+    become: true
+    ansible.builtin.systemd:
+      state: started
+      name: zookeeper
+      daemon_reload: true
+      enabled: true
 
   - name: Start Kafka
-    ansible.builtin.shell: nohup /home/ec2-user/kafka_2.13-3.5.1/bin/kafka-server-start.sh /home/ec2-user/kafka_2.13-3.5.1/config/server.properties > /home/ec2-user/kafka_2.13-3.5.1/kafka.out 2>&1 &
-
-  - name: Create ecommerce-events topic
-    ansible.builtin.shell: /home/ec2-user/kafka_2.13-3.5.1/bin/kafka-topics.sh --create --topic ecommerce-events --bootstrap-server localhost:9092
+    become: true
+    ansible.builtin.systemd:
+      state: started
+      name: kafka
+      daemon_reload: true
+      enabled: true
 
   - name: Copy ecommerce-events directory
     ansible.builtin.copy:
@@ -56,3 +75,28 @@
 
   - name: Install kafka-python and pyspark Python libraries
     ansible.builtin.shell: pip install kafka-python pyspark
+
+  - name: Copy input dataset
+    ansible.builtin.copy:
+      src: ecommerce_data.orc.zip
+      dest: /home/ec2-user/
+
+  - name: Create input directory
+    ansible.builtin.shell: mkdir /home/ec2-user/input
+
+  - name: Unzip input dataset
+    ansible.builtin.shell: unzip /home/ec2-user/ecommerce_data.orc.zip -d /home/ec2-user/input
+
+  - name: Copy ecommerce-events.service to instance
+    become: true
+    ansible.builtin.copy:
+      src: ecommerce-events.service
+      dest: /etc/systemd/system/ecommerce-events.service
+
+  - name: Start ecommerce-events
+    become: true
+    ansible.builtin.systemd:
+      state: started
+      name: ecommerce-events
+      daemon_reload: true
+      enabled: true
